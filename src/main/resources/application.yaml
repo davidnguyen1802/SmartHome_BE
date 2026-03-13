@@ -25,3 +25,16 @@ server:
 jwt:
     secret: ${JWT_SECRET}
     expiration: 86400000
+
+adafruit:
+  io:
+    username: ${ADAFRUIT_IO_USERNAME}
+    key: ${ADAFRUIT_IO_KEY}
+    mqtt-broker-url: ssl://io.adafruit.com:1883
+    sensor-topics:
+      - ${ADAFRUIT_IO_USERNAME}/feeds/bbc-temp
+      - ${ADAFRUIT_IO_USERNAME}/feeds/bbc-humi
+      - ${ADAFRUIT_IO_USERNAME}/feeds/bbc-light
+      - ${ADAFRUIT_IO_USERNAME}/feeds/bbc-pir
+    led-topic: ${ADAFRUIT_IO_USERNAME}/feeds/bbc-led
+    fan-topic: ${ADAFRUIT_IO_USERNAME}/feeds/bbc-fan

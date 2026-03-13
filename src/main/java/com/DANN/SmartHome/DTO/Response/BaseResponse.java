@@ -1,11 +1,11 @@
 package com.DANN.SmartHome.DTO.Response;
 
-public record BaseResponse<T>(
-        int statusCode,
-        String message,
-        T data
-) {
-    public static <T> BaseResponse<T> of(int statusCode, String message, T data) {
-        return new BaseResponse<>(statusCode, message, data);
-    }
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+public class BaseResponse {
+    private int statusCode;
+    private String message;
+    private Object data;
 }

@@ -2,6 +2,7 @@ package com.DANN.SmartHome.domain.entity;
 
 import com.DANN.SmartHome.domain.enums.CommandSource;
 import com.DANN.SmartHome.domain.enums.DeviceMode;
+import com.DANN.SmartHome.domain.enums.DeviceState;
 import com.DANN.SmartHome.domain.enums.DeviceType;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -31,7 +32,7 @@ public class DeviceStateEntity extends AuditEntity {
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "state", nullable = false, columnDefinition = "device_state_enum")
-    private DeviceStateEntity state;
+    private DeviceState state;
 
     @Column(name = "last_command_payload")
     private String lastCommandPayload;

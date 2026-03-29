@@ -6,6 +6,7 @@ import com.DANN.SmartHome.domain.entity.SensorReading;
 import com.DANN.SmartHome.domain.repository.SensorLatestRepository;
 import com.DANN.SmartHome.domain.repository.SensorReadingRepository;
 import com.DANN.SmartHome.service.AutomationService;
+import com.DANN.SmartHome.service.DashboardRealtimeService;
 import com.DANN.SmartHome.service.SensorIngestionService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class SensorIngestionServiceImp implements SensorIngestionService {
     private final SensorReadingRepository sensorReadingRepository;
     private final SensorLatestRepository sensorLatestRepository;
     private final AutomationService automationService;
+    private final DashboardRealtimeService dashboardRealtimeService;
 
     @Override
     public void handleSensorEvent(SensorEvent event) {
@@ -48,6 +50,7 @@ public class SensorIngestionServiceImp implements SensorIngestionService {
         sensorLatestRepository.save(latest);
 
         automationService.evaluateAfterSensorUpdate(event);
+        dashboardRealtimeService.publishDashboardChanged();
     }
 
     private boolean isValid(SensorEvent event) {

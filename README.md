@@ -6,7 +6,7 @@ This guide helps Frontend test the current backend APIs and verify visible resul
 
 - Base URL: `http://localhost:8080`
 - API prefix: `/api/v1`
-- Auth: all routes are `permitAll()` (no JWT needed right now)
+- Auth: login API available at `/api/v1/auth/login`; current routes are still `permitAll()`
 - Response wrapper for success and error:
 
 ```json
@@ -28,6 +28,11 @@ This guide helps Frontend test the current backend APIs and verify visible resul
 - `ADAFRUIT_IO_USERNAME`
 - `ADAFRUIT_IO_KEY`
 
+Optional auth seed vars:
+
+- `AUTH_SEED_USERNAME` (default `admin`)
+- `AUTH_SEED_PASSWORD` (default `admin123`)
+
 > Note: API tests below can run without real MQTT hardware if you use `/api/v1/test/sensors/ingest`.
 
 ### Required seed data in DB
@@ -41,6 +46,26 @@ You need at least:
 - `sensor_latest`: `TEMP`, `HUMI`, `LIGHT`, `PIR`
 
 ## 3) API catalog for FE
+
+### 3.0 Login
+
+- **POST** `/api/v1/auth/login`
+- Body:
+
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+- Returns `data.accessToken`, `data.tokenType`, `data.expiresAt`, `data.username`
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
+```
 
 ### 3.1 Dashboard
 

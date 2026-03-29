@@ -1,9 +1,9 @@
 package com.DANN.SmartHome.controller;
 
-import com.DANN.SmartHome.DTO.Request.DeviceCommandRequest;
-import com.DANN.SmartHome.DTO.Request.SetDeviceModeRequest;
-import com.DANN.SmartHome.DTO.Response.BaseResponse;
-import com.DANN.SmartHome.DTO.Response.DeviceStatusResponse;
+import com.DANN.SmartHome.DTO.request.DeviceCommandRequest;
+import com.DANN.SmartHome.DTO.request.SetDeviceModeRequest;
+import com.DANN.SmartHome.DTO.response.BaseResponse;
+import com.DANN.SmartHome.DTO.response.DeviceStatusResponse;
 import com.DANN.SmartHome.domain.enums.DeviceType;
 import com.DANN.SmartHome.service.DeviceControlService;
 import jakarta.validation.Valid;

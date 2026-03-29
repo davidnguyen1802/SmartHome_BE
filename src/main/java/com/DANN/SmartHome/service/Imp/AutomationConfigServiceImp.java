@@ -1,9 +1,10 @@
 package com.DANN.SmartHome.service.Imp;
 
-import com.DANN.SmartHome.DTO.Response.AutomationConfigResponse;
+import com.DANN.SmartHome.DTO.response.AutomationConfigResponse;
 import com.DANN.SmartHome.domain.entity.AutomationConfig;
 import com.DANN.SmartHome.domain.repository.AutomationConfigRepository;
 import com.DANN.SmartHome.service.AutomationConfigService;
+import com.DANN.SmartHome.service.DashboardRealtimeService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.math.BigDecimal;
 public class AutomationConfigServiceImp implements AutomationConfigService {
 
     private final AutomationConfigRepository automationConfigRepository;
+    private final DashboardRealtimeService dashboardRealtimeService;
 
     @Override
     public AutomationConfigResponse getConfig() {
@@ -37,6 +39,7 @@ public class AutomationConfigServiceImp implements AutomationConfigService {
         config.setFanHighTemp(highTemp);
 
         automationConfigRepository.save(config);
+        dashboardRealtimeService.publishDashboardChanged();
         return toResponse(config);
     }
 

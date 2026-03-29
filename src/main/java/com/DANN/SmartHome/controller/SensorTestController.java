@@ -1,8 +1,8 @@
 package com.DANN.SmartHome.controller;
 
 import com.DANN.SmartHome.DTO.Internal.SensorEvent;
-import com.DANN.SmartHome.DTO.Request.SensorTestRequest;
-import com.DANN.SmartHome.DTO.Response.BaseResponse;
+import com.DANN.SmartHome.DTO.request.SensorTestRequest;
+import com.DANN.SmartHome.DTO.response.BaseResponse;
 import com.DANN.SmartHome.service.SensorIngestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

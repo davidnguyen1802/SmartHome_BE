@@ -1,6 +1,6 @@
 package com.DANN.SmartHome.Util;
 
-import com.DANN.SmartHome.DTO.Response.BaseResponse;
+import com.DANN.SmartHome.DTO.response.BaseResponse;
 import org.springframework.http.ResponseEntity;
 
 public class ResponseCentral {

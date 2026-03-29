@@ -33,6 +33,9 @@ auth:
     username: ${AUTH_SEED_USERNAME:admin}
     password: ${AUTH_SEED_PASSWORD:admin123}
 
+cors:
+  allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
+
 adafruit:
   io:
     username: ${ADAFRUIT_IO_USERNAME}

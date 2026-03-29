@@ -1,13 +1,12 @@
-# SmartHome Backend - FE API Testing Guide
+# SmartHome Backend - FE Integration API Guide
 
-This guide helps Frontend test the current backend APIs and verify visible results.
+Tài liệu này tổng hợp API BE để FE implement giao diện web (dashboard, điều khiển thiết bị, auth JWT, realtime SSE).
 
-## 1) Quick context from codebase
+## 1) Tổng quan nhanh
 
-- Base URL: `http://localhost:8080`
+- Base URL local: `http://localhost:8080`
 - API prefix: `/api/v1`
-- Auth: login API available at `/api/v1/auth/login`; current routes are still `permitAll()`
-- Response wrapper for success and error:
+- Mọi response theo wrapper:
 
 ```json
 {
@@ -17,37 +16,13 @@ This guide helps Frontend test the current backend APIs and verify visible resul
 }
 ```
 
-## 2) Prerequisites
+- Auth hiện tại:
+  - Public: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`
+  - Protected (cần access token): các route `/api/v1/**` còn lại, bao gồm `GET /api/v1/auth/me`, dashboard, devices, automation, test sensors.
 
-### Required env vars (from `application.yaml`)
+## 2) Authentication flow cho FE
 
-- `DB_URL`
-- `DB_USERNAME`
-- `DB_PASSWORD`
-- `JWT_SECRET`
-- `ADAFRUIT_IO_USERNAME`
-- `ADAFRUIT_IO_KEY`
-
-Optional auth seed vars:
-
-- `AUTH_SEED_USERNAME` (default `admin`)
-- `AUTH_SEED_PASSWORD` (default `admin123`)
-
-> Note: API tests below can run without real MQTT hardware if you use `/api/v1/test/sensors/ingest`.
-
-### Required seed data in DB
-
-`Dashboard` and `Device` APIs expect existing rows. If missing, backend can return 400 with messages like `Missing device state` or `Missing sensor latest`.
-
-You need at least:
-
-- `device_states`: `LED`, `FAN`
-- `automation_configs`: row with `id = 1`
-- `sensor_latest`: `TEMP`, `HUMI`, `LIGHT`, `PIR`
-
-## 3) API catalog for FE
-
-### 3.0 Login
+## 2.1 Login
 
 - **POST** `/api/v1/auth/login`
 - Body:
@@ -59,59 +34,105 @@ You need at least:
 }
 ```
 
-- Returns `data.accessToken`, `data.tokenType`, `data.expiresAt`, `data.username`
+- Response `data` (`LoginResponse`):
+  - `accessToken`: JWT dùng cho các API protected
+  - `refreshToken`: JWT dùng để xin token mới
+  - `tokenType`: luôn là `Bearer`
+  - `expiresAt`: thời điểm hết hạn access token
+  - `refreshExpiresAt`: thời điểm hết hạn refresh token
+  - `username`
 
-```bash
-curl -X POST "http://localhost:8080/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
+## 2.2 Refresh token
+
+- **POST** `/api/v1/auth/refresh`
+- Body:
+
+```json
+{
+  "refreshToken": "<refresh-token-cu>"
+}
 ```
 
-### 3.1 Dashboard
+- Response trả về cặp token mới (access + refresh).
+- BE đang dùng cơ chế rotate refresh token (token cũ sẽ bị revoke sau khi refresh thành công).
+
+## 2.3 Me (profile đang đăng nhập)
+
+- **GET** `/api/v1/auth/me`
+- Header bắt buộc:
+
+```http
+Authorization: Bearer <access-token>
+```
+
+- Response `data` (`MeResponse`):
+  - `id`
+  - `username`
+  - `enabled`
+
+## 2.4 Gợi ý FE token handling
+
+- Lưu `accessToken` trong memory/state (ưu tiên) hoặc storage tùy policy của FE.
+- Khi API 401:
+  1. gọi `/auth/refresh` bằng `refreshToken`
+  2. nếu refresh thành công -> retry request trước đó
+  3. nếu refresh fail -> logout và về màn hình login
+
+## 3) Dashboard APIs
+
+## 3.1 Snapshot dashboard
 
 - **GET** `/api/v1/dashboard`
-- Purpose: one-shot snapshot for FE home screen
-- `data` shape:
-  - `temp`, `humi`, `light`, `pir` -> sensor latest
-  - `led`, `fan` -> device status
-  - `automationConfig` -> automation thresholds
+- Header: `Authorization: Bearer <access-token>`
+- `data` (`DashboardResponse`):
+  - `temp`, `humi`, `light`, `pir` (`SensorLatestResponse`)
+  - `led`, `fan` (`DeviceStatusResponse`)
+  - `automationConfig` (`AutomationConfigResponse`)
 
-Example:
+## 3.2 Realtime dashboard (SSE)
 
-```bash
-curl -X GET "http://localhost:8080/api/v1/dashboard"
+- **GET** `/api/v1/dashboard/stream`
+- Content type: `text/event-stream`
+- Event BE gửi:
+  - `dashboard.snapshot`: payload là `DashboardResponse`
+  - `heartbeat`: payload chuỗi `"ok"`
+
+Lưu ý quan trọng cho FE:
+
+- Endpoint này đang là protected route (`/api/v1/**`).
+- `EventSource` native của browser không set được custom `Authorization` header.
+- FE cần 1 trong các phương án:
+  - dùng thư viện/event-source polyfill có hỗ trợ header
+  - hoặc đổi sang polling nếu chưa set được auth cho SSE
+  - hoặc backend thay đổi policy endpoint stream (nếu team thống nhất)
+
+## 4) Device APIs
+
+Tất cả endpoint dưới cần header:
+
+```http
+Authorization: Bearer <access-token>
 ```
 
-### 3.2 Device status
+## 4.1 Lấy trạng thái thiết bị
 
 - **GET** `/api/v1/devices/{deviceType}`
-- `deviceType`: `LED` or `FAN`
+- `deviceType`: `LED` | `FAN`
 
-```bash
-curl -X GET "http://localhost:8080/api/v1/devices/LED"
-curl -X GET "http://localhost:8080/api/v1/devices/FAN"
-```
-
-### 3.3 Set device mode
+## 4.2 Đổi mode thiết bị
 
 - **PUT** `/api/v1/devices/{deviceType}/mode`
 - Body:
 
 ```json
 {
-  "mode": "MANUAL"
+  "mode": "AUTO"
 }
 ```
 
-- `mode`: `MANUAL` or `AUTO`
+- `mode`: `MANUAL` | `AUTO`
 
-```bash
-curl -X PUT "http://localhost:8080/api/v1/devices/LED/mode" \
-  -H "Content-Type: application/json" \
-  -d "{\"mode\":\"AUTO\"}"
-```
-
-### 3.4 Manual command
+## 4.3 Gửi lệnh tay
 
 - **POST** `/api/v1/devices/{deviceType}/command`
 - Body:
@@ -119,25 +140,22 @@ curl -X PUT "http://localhost:8080/api/v1/devices/LED/mode" \
 ```json
 {
   "state": "ON",
-  "reason": "test mqtt"
+  "reason": "turn on from dashboard"
 }
 ```
 
-- `state`: `ON` or `OFF`
+- `state`: `ON` | `OFF`
+- `reason`: optional
 
-```bash
-curl -X POST "http://localhost:8080/api/v1/devices/LED/command" \
-  -H "Content-Type: application/json" \
-  -d "{\"state\":\"ON\",\"reason\":\"test mqtt\"}"
-```
+## 5) Automation APIs
 
-### 3.5 Automation config
+Tất cả endpoint dưới cần `Authorization`.
+
+## 5.1 Lấy config automation
 
 - **GET** `/api/v1/automation/config`
 
-```bash
-curl -X GET "http://localhost:8080/api/v1/automation/config"
-```
+## 5.2 Cập nhật ngưỡng fan
 
 - **PUT** `/api/v1/automation/fan-threshold`
 - Body:
@@ -149,94 +167,70 @@ curl -X GET "http://localhost:8080/api/v1/automation/config"
 }
 ```
 
-Rules:
+Validation:
 
-- each value must be in `[0,100]`
+- `lowTemp`, `highTemp` trong khoảng `[0,100]`
 - `highTemp >= lowTemp`
 
-```bash
-curl -X PUT "http://localhost:8080/api/v1/automation/fan-threshold" \
-  -H "Content-Type: application/json" \
-  -d "{\"lowTemp\":26,\"highTemp\":30}"
-```
-
-### 3.6 Sensor ingest (test helper for FE)
+## 6) Sensor test API (hỗ trợ FE/dev)
 
 - **POST** `/api/v1/test/sensors/ingest`
-- Purpose: simulate sensor data from FE without waiting for MQTT device
+- Header: `Authorization: Bearer <access-token>`
+- Body:
 
-Body:
+```json
+{
+  "sensorType": "LIGHT",
+  "value": 20
+}
+```
+
+- `sensorType`: `TEMP` | `HUMI` | `LIGHT` | `PIR`
+
+Endpoint này hữu ích để demo UI realtime mà không cần thiết bị MQTT thật.
+
+## 7) DTO shape chính FE cần render
+
+## 7.1 SensorLatestResponse
 
 ```json
 {
   "sensorType": "TEMP",
-  "value": 32
+  "value": 31.5,
+  "receivedAt": "2026-03-29T12:00:00Z"
 }
 ```
 
-- `sensorType`: `TEMP`, `HUMI`, `LIGHT`, `PIR`
-
-```bash
-curl -X POST "http://localhost:8080/api/v1/test/sensors/ingest" \
-  -H "Content-Type: application/json" \
-  -d "{\"sensorType\":\"LIGHT\",\"value\":20}"
-```
-
-## 4) End-to-end test flows FE can run
-
-## Flow A - Manual control visible on dashboard
-
-1. Set LED mode to `MANUAL`.
-2. Send command `LED ON` with reason.
-3. Call `GET /api/v1/devices/LED` and `GET /api/v1/dashboard`.
-4. Expect:
-   - `led.state = ON`
-   - `led.mode = MANUAL`
-   - `led.lastCommandSource = MANUAL_USER`
-   - `led.lastCommandReason` equals sent reason
-
-## Flow B - Auto LED by LIGHT sensor
-
-1. Set LED mode to `AUTO`.
-2. Ingest `LIGHT = 20`.
-3. Read dashboard: expect LED turns `ON`.
-4. Ingest `LIGHT = 90`.
-5. Read dashboard: expect LED turns `OFF`.
-
-Current backend thresholds in automation logic:
-
-- `LIGHT <= 50` -> LED `ON`
-- `LIGHT >= 70` -> LED `OFF`
-
-## Flow C - Auto FAN by TEMP sensor
-
-1. Set FAN mode to `AUTO`.
-2. Read current fan thresholds from `GET /api/v1/automation/config`.
-3. Ingest `TEMP` below/equal `fanLowTemp` -> expect FAN `OFF`.
-4. Ingest `TEMP` above/equal `fanHighTemp` -> expect FAN `ON`.
-
-## Flow D - Validation behavior
-
-Try invalid request examples:
-
-- invalid enum:
+## 7.2 DeviceStatusResponse
 
 ```json
 {
-  "mode": "AUTOO"
+  "deviceType": "LED",
+  "mode": "AUTO",
+  "state": "ON",
+  "lastCommandPayload": "0",
+  "lastCommandSource": "AUTOMATION",
+  "lastCommandReason": "LIGHT <= 50",
+  "lastCommandAt": "2026-03-29T12:00:00Z",
+  "updatedAt": "2026-03-29T12:00:00Z"
 }
 ```
 
-- invalid threshold relation:
+## 7.3 AutomationConfigResponse
 
 ```json
 {
-  "lowTemp": 35,
-  "highTemp": 30
+  "fanLowTemp": 26,
+  "fanHighTemp": 30,
+  "ledOnThreshold": 50,
+  "ledOffThreshold": 70,
+  "pirAlertCooldownSeconds": 30
 }
 ```
 
-Expected error shape:
+## 8) Error handling contract
+
+Validation/business error thường trả:
 
 ```json
 {
@@ -246,16 +240,54 @@ Expected error shape:
 }
 ```
 
-## 5) Payload enums FE should use
+Auth fail trả:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "data": null
+}
+```
+
+## 9) Enums FE cần dùng đúng chữ hoa
 
 - `DeviceType`: `LED`, `FAN`
 - `DeviceMode`: `MANUAL`, `AUTO`
 - `DeviceState`: `ON`, `OFF`
 - `SensorType`: `TEMP`, `HUMI`, `LIGHT`, `PIR`
+- `CommandSource`: `MANUAL_USER`, `AUTOMATION`
 
-## 6) Notes for FE integration
+## 10) Checklist implement FE
 
-- Use exact uppercase enum strings.
-- Backend currently has no auth requirement, but keep auth layer flexible for future JWT enablement.
-- No explicit CORS config is present in backend; if FE runs on another origin and browser blocks requests, add backend CORS config.
+1. Làm màn hình login + store token.
+2. Setup HTTP interceptor để tự động gán `Authorization`.
+3. Setup auto refresh token khi gặp 401.
+4. Mở dashboard bằng `GET /dashboard` (first snapshot).
+5. Nối realtime stream `/dashboard/stream` (nếu đảm bảo gửi được auth header).
+6. Render form điều khiển LED/FAN + update ngay sau command/mode change.
+7. Render và update automation threshold.
+8. Dùng `test/sensors/ingest` để test realtime flow khi dev.
+
+## 11) Curl quick test
+
+```bash
+# Login
+curl -X POST "http://localhost:8080/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
+
+# Me
+curl -X GET "http://localhost:8080/api/v1/auth/me" \
+  -H "Authorization: Bearer <access-token>"
+
+# Dashboard
+curl -X GET "http://localhost:8080/api/v1/dashboard" \
+  -H "Authorization: Bearer <access-token>"
+
+# Refresh
+curl -X POST "http://localhost:8080/api/v1/auth/refresh" \
+  -H "Content-Type: application/json" \
+  -d "{\"refreshToken\":\"<refresh-token>\"}"
+```
 

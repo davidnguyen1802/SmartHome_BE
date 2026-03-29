@@ -1,8 +1,8 @@
 package com.DANN.SmartHome.controller;
 
-import com.DANN.SmartHome.DTO.Request.UpdateFanThresholdRequest;
-import com.DANN.SmartHome.DTO.Response.AutomationConfigResponse;
-import com.DANN.SmartHome.DTO.Response.BaseResponse;
+import com.DANN.SmartHome.DTO.request.UpdateFanThresholdRequest;
+import com.DANN.SmartHome.DTO.response.AutomationConfigResponse;
+import com.DANN.SmartHome.DTO.response.BaseResponse;
 import com.DANN.SmartHome.service.AutomationConfigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

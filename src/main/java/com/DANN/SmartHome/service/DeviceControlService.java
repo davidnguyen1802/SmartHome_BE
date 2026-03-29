@@ -1,6 +1,6 @@
 package com.DANN.SmartHome.service;
 
-import com.DANN.SmartHome.DTO.Response.DeviceStatusResponse;
+import com.DANN.SmartHome.DTO.response.DeviceStatusResponse;
 import com.DANN.SmartHome.domain.enums.DeviceMode;
 import com.DANN.SmartHome.domain.enums.DeviceState;
 import com.DANN.SmartHome.domain.enums.DeviceType;

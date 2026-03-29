@@ -1,4 +1,4 @@
-package com.DANN.SmartHome.DTO.Response;
+package com.DANN.SmartHome.DTO.response;
 
 import lombok.*;
 

@@ -1,4 +1,4 @@
-package com.DANN.SmartHome.DTO.Request;
+package com.DANN.SmartHome.DTO.request;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

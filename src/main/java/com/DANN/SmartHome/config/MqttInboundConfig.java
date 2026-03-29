@@ -20,7 +20,8 @@ public class MqttInboundConfig {
     public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(
             AdafruitProperties props,
             MqttPahoClientFactory factory
-    ) {
+    )
+    {
         String clientId = props.getUsername() + "-spring-inbound";
         String[] topics = props.getSensorTopics().toArray(new String[0]);
 

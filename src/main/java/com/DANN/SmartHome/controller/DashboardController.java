@@ -1,7 +1,7 @@
 package com.DANN.SmartHome.controller;
 
-import com.DANN.SmartHome.DTO.Response.BaseResponse;
-import com.DANN.SmartHome.DTO.Response.DashboardResponse;
+import com.DANN.SmartHome.DTO.response.BaseResponse;
+import com.DANN.SmartHome.DTO.response.DashboardResponse;
 import com.DANN.SmartHome.service.DashboardQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

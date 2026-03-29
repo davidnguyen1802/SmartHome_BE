@@ -1,9 +1,9 @@
 package com.DANN.SmartHome.service.Imp;
 
-import com.DANN.SmartHome.DTO.Response.AutomationConfigResponse;
-import com.DANN.SmartHome.DTO.Response.DashboardResponse;
-import com.DANN.SmartHome.DTO.Response.DeviceStatusResponse;
-import com.DANN.SmartHome.DTO.Response.SensorLatestResponse;
+import com.DANN.SmartHome.DTO.response.AutomationConfigResponse;
+import com.DANN.SmartHome.DTO.response.DashboardResponse;
+import com.DANN.SmartHome.DTO.response.DeviceStatusResponse;
+import com.DANN.SmartHome.DTO.response.SensorLatestResponse;
 import com.DANN.SmartHome.domain.entity.AutomationConfig;
 import com.DANN.SmartHome.domain.entity.DeviceStateEntity;
 import com.DANN.SmartHome.domain.entity.SensorLatest;

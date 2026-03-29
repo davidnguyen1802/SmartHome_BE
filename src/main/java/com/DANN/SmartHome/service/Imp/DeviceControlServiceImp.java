@@ -11,8 +11,9 @@ import com.DANN.SmartHome.domain.repository.DeviceStateRepository;
 import com.DANN.SmartHome.mapper.DeviceStateMapper;
 import com.DANN.SmartHome.service.DeviceCommandPublisher;
 import com.DANN.SmartHome.service.DeviceControlService;
+import com.DANN.SmartHome.service.DashboardRealtimeService;
 import com.DANN.SmartHome.DTO.Internal.PublishCommand;
-import com.DANN.SmartHome.DTO.Response.DeviceStatusResponse;
+import com.DANN.SmartHome.DTO.response.DeviceStatusResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class DeviceControlServiceImp implements DeviceControlService {
     private final DeviceCommandLogRepository deviceCommandLogRepository;
     private final DeviceCommandPublisher deviceCommandPublisher;
     private final DeviceStateMapper deviceStateMapper;
+    private final DashboardRealtimeService dashboardRealtimeService;
 
     @Override
     public DeviceStatusResponse setMode(DeviceType deviceType, DeviceMode mode) {
@@ -37,6 +39,7 @@ public class DeviceControlServiceImp implements DeviceControlService {
 
         device.setMode(mode);
         deviceStateRepository.save(device);
+        dashboardRealtimeService.publishDashboardChanged();
 
         return deviceStateMapper.toResponse(device);
     }
@@ -79,6 +82,8 @@ public class DeviceControlServiceImp implements DeviceControlService {
                 CommandSource.MANUAL_USER,
                 reason
         ));
+
+        dashboardRealtimeService.publishDashboardChanged();
 
         return deviceStateMapper.toResponse(device);
     }

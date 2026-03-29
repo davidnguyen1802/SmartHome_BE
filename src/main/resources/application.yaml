@@ -11,7 +11,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-        ddl-auto: update
+        ddl-auto: none
     properties:
         hibernate:
             dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -23,8 +23,15 @@ server:
     enabled: false
 
 jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:${JWT_SECRET_KEY}}
     expiration: 86400000
+    refresh-expiration: 604800000
+
+auth:
+  seed:
+    enabled: true
+    username: ${AUTH_SEED_USERNAME:admin}
+    password: ${AUTH_SEED_PASSWORD:admin123}
 
 adafruit:
   io:
@@ -38,3 +45,10 @@ adafruit:
       - ${ADAFRUIT_IO_USERNAME}/feeds/bbc-pir
     led-topic: ${ADAFRUIT_IO_USERNAME}/feeds/bbc-led
     fan-topic: ${ADAFRUIT_IO_USERNAME}/feeds/bbc-fan
+
+dashboard:
+  realtime:
+    enabled: true
+    emitter-timeout-ms: 0
+    heartbeat-interval-ms: 15000
+

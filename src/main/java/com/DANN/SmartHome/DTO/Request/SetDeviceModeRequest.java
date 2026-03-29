@@ -1,4 +1,4 @@
-package com.DANN.SmartHome.DTO.Request;
+package com.DANN.SmartHome.DTO.request;
 
 import com.DANN.SmartHome.domain.enums.DeviceMode;
 import jakarta.validation.constraints.NotNull;

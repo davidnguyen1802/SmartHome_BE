@@ -1,6 +1,6 @@
 package com.DANN.SmartHome.Exception;
 
-import com.DANN.SmartHome.DTO.Response.BaseResponse;
+import com.DANN.SmartHome.DTO.response.BaseResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;

@@ -52,10 +52,12 @@ public class AutomationServiceImp implements AutomationService {
             return;
         }
 
-        if (lightValue.compareTo(new BigDecimal("50")) <= 0) {
-            publishIfChanged(led, DeviceState.ON, "0", "LIGHT <= 50");
-        } else if (lightValue.compareTo(new BigDecimal("70")) >= 0) {
-            publishIfChanged(led, DeviceState.OFF, "1", "LIGHT >= 70");
+        AutomationConfig config = getAutomationConfig();
+
+        if (lightValue.compareTo(config.getLedOnThreshold()) <= 0) {
+            publishIfChanged(led, DeviceState.ON, "0", "LIGHT <= onThreshold");
+        } else if (lightValue.compareTo(config.getLedOffThreshold()) >= 0) {
+            publishIfChanged(led, DeviceState.OFF, "1", "LIGHT >= offThreshold");
         }
     }
 

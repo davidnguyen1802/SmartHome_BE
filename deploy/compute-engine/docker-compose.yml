@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  smarthome-backend:
+    container_name: smarthome-backend
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: smarthome-backend:latest
+    env_file:
+      - .env  
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-net
+
+networks:
+  smarthome-net:
+    driver: bridge
+

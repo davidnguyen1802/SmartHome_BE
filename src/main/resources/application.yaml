@@ -19,6 +19,7 @@ spring:
 
 server:
   address: 0.0.0.0
+  port: ${PORT:8080}
   compression:
     enabled: false
 
@@ -31,7 +32,7 @@ auth:
   seed:
     enabled: true
     username: ${AUTH_SEED_USERNAME:admin}
-    password: ${AUTH_SEED_PASSWORD:admin123}
+    password: ${AUTH_SEED_PASSWORD:123456}
 
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}

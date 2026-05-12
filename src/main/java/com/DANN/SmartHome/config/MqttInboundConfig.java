@@ -32,9 +32,6 @@ public class MqttInboundConfig {
         adapter.setQos(0);
         adapter.setOutputChannel(mqttInputChannel());
 
-        //FIX: RACE CONDITION Đặt phase cao để Adapter khởi động sau cùng, đảm bảo Subscriber đã sẵn sàng hứng dữ liệu
-        // adapter.setPhase(100);
-
         return adapter;
     }
 }

@@ -43,6 +43,27 @@ public class AutomationConfigServiceImp implements AutomationConfigService {
         return toResponse(config);
     }
 
+    @Override
+    public AutomationConfigResponse updateLedThreshold(BigDecimal onThreshold, BigDecimal offThreshold) {
+        if (onThreshold == null || offThreshold == null) {
+            throw new IllegalArgumentException("onThreshold and offThreshold must not be null");
+        }
+
+        // LED bật khi LIGHT <= onThreshold (tối), tắt khi LIGHT >= offThreshold (sáng)
+        // => offThreshold phải >= onThreshold để tránh vùng trùng lặp.
+        if (offThreshold.compareTo(onThreshold) < 0) {
+            throw new IllegalArgumentException("offThreshold must be greater than or equal to onThreshold");
+        }
+
+        AutomationConfig config = getConfigEntity();
+        config.setLedOnThreshold(onThreshold);
+        config.setLedOffThreshold(offThreshold);
+
+        automationConfigRepository.save(config);
+        dashboardRealtimeService.publishDashboardChanged();
+        return toResponse(config);
+    }
+
     private AutomationConfig getConfigEntity() {
         return automationConfigRepository.findById((short) 1)
                 .orElseThrow(() -> new IllegalStateException("Automation config not found"));

@@ -13,6 +13,7 @@ import com.DANN.SmartHome.domain.repository.AutomationConfigRepository;
 import com.DANN.SmartHome.domain.repository.DeviceCommandLogRepository;
 import com.DANN.SmartHome.domain.repository.DeviceStateRepository;
 import com.DANN.SmartHome.service.AutomationService;
+import com.DANN.SmartHome.service.DashboardRealtimeService;
 import com.DANN.SmartHome.service.DeviceCommandPublisher;
 import com.DANN.SmartHome.service.NotificationService;
 import jakarta.transaction.Transactional;
@@ -33,6 +34,7 @@ public class AutomationServiceImp implements AutomationService {
     private final DeviceCommandPublisher deviceCommandPublisher;
     private final DeviceCommandLogRepository deviceCommandLogRepository;
     private final NotificationService notificationService;
+    private final DashboardRealtimeService dashboardRealtimeService;
 
     @Override
     public void evaluateAfterSensorUpdate(SensorEvent event) {
@@ -52,10 +54,12 @@ public class AutomationServiceImp implements AutomationService {
             return;
         }
 
-        if (lightValue.compareTo(new BigDecimal("50")) <= 0) {
-            publishIfChanged(led, DeviceState.ON, "0", "LIGHT <= 50");
-        } else if (lightValue.compareTo(new BigDecimal("70")) >= 0) {
-            publishIfChanged(led, DeviceState.OFF, "1", "LIGHT >= 70");
+        AutomationConfig config = getAutomationConfig();
+
+        if (lightValue.compareTo(config.getLedOnThreshold()) <= 0) {
+            publishIfChanged(led, DeviceState.ON, "0", "LIGHT <= onThreshold");
+        } else if (lightValue.compareTo(config.getLedOffThreshold()) >= 0) {
+            publishIfChanged(led, DeviceState.OFF, "1", "LIGHT >= offThreshold");
         }
     }
 
@@ -76,6 +80,9 @@ public class AutomationServiceImp implements AutomationService {
 
     private void evaluatePir(BigDecimal pirValue) {
         if (pirValue.compareTo(BigDecimal.ONE) == 0) {
+            // SSE bắn không cooldown để FE luôn phát chuông + toast khi PIR=1.
+            // Notification DB có cooldown riêng (pirAlertCooldownSeconds) để tránh spam lịch sử.
+            dashboardRealtimeService.publishMotionDetected();
             notificationService.createMotionDetectedNotification();
         }
     }

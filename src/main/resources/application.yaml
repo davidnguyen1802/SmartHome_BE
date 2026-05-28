@@ -7,8 +7,13 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 10000
 
   jpa:
+    open-in-view: false
     show-sql: true
     hibernate:
         ddl-auto: none
@@ -19,6 +24,7 @@ spring:
 
 server:
   address: 0.0.0.0
+  port: ${PORT:8080}
   compression:
     enabled: false
 
@@ -31,7 +37,7 @@ auth:
   seed:
     enabled: true
     username: ${AUTH_SEED_USERNAME:admin}
-    password: ${AUTH_SEED_PASSWORD:admin123}
+    password: ${AUTH_SEED_PASSWORD:123456}
 
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}

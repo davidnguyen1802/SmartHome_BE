@@ -291,3 +291,18 @@ curl -X POST "http://localhost:8080/api/v1/auth/refresh" \
   -d "{\"refreshToken\":\"<refresh-token>\"}"
 ```
 
+## 12) Deploy on Google Compute Engine
+
+Da bo sung bo file deploy cho Compute Engine:
+
+- `Dockerfile`
+- `.dockerignore`
+- `deploy/compute-engine/docker-compose.yml`
+- `deploy/compute-engine/.env.example`
+- `deploy/compute-engine/install-docker.sh`
+- `deploy/compute-engine/deploy.sh`
+- `deploy/compute-engine/logs.sh`
+- `docs/deploy-compute-engine.md`
+
+Huong dan day du xem tai: `docs/deploy-compute-engine.md`.
+

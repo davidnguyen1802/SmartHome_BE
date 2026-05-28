@@ -1,6 +1,7 @@
 package com.DANN.SmartHome.controller;
 
 import com.DANN.SmartHome.DTO.request.UpdateFanThresholdRequest;
+import com.DANN.SmartHome.DTO.request.UpdateLedThresholdRequest;
 import com.DANN.SmartHome.DTO.response.AutomationConfigResponse;
 import com.DANN.SmartHome.DTO.response.BaseResponse;
 import com.DANN.SmartHome.service.AutomationConfigService;
@@ -38,6 +39,21 @@ public class AutomationController {
         BaseResponse response = new BaseResponse();
         response.setStatusCode(200);
         response.setMessage("Update fan threshold successfully");
+        response.setData(data);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/led-threshold")
+    public ResponseEntity<?> updateLedThreshold(@Valid @RequestBody UpdateLedThresholdRequest request) {
+        AutomationConfigResponse data = automationConfigService.updateLedThreshold(
+                request.onThreshold(),
+                request.offThreshold()
+        );
+
+        BaseResponse response = new BaseResponse();
+        response.setStatusCode(200);
+        response.setMessage("Update led threshold successfully");
         response.setData(data);
 
         return ResponseEntity.ok(response);

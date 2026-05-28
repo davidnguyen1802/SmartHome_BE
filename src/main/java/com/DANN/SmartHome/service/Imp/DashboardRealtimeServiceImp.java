@@ -17,7 +17,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -107,6 +109,22 @@ public class DashboardRealtimeServiceImp implements DashboardRealtimeService {
         DashboardResponse snapshot = dashboardQueryService.getDashboard();
         for (SseEmitter emitter : emitters) {
             sendEvent(emitter, "dashboard.snapshot", snapshot);
+        }
+    }
+
+    @Override
+    public void publishMotionDetected() {
+        if (!realtimeEnabled || emitters.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> payload = Map.of(
+                "detectedAt", OffsetDateTime.now().toString(),
+                "message", "Phát hiện chuyển động !"
+        );
+
+        for (SseEmitter emitter : emitters) {
+            sendEvent(emitter, "motion.detected", payload);
         }
     }
 

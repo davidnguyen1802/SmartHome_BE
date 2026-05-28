@@ -6,4 +6,6 @@ public interface DashboardRealtimeService {
     SseEmitter subscribe();
 
     void publishDashboardChanged();
+
+    void publishMotionDetected();
 }

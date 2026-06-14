@@ -1,308 +1,164 @@
-# SmartHome Backend - FE Integration API Guide
+# SmartHome Backend
 
-Tài liệu này tổng hợp API BE để FE implement giao diện web (dashboard, điều khiển thiết bị, auth JWT, realtime SSE).
+SmartHome Backend là một hệ thống backend Spring Boot phục vụ cho ứng dụng IoT smart home, hỗ trợ thu thập dữ liệu cảm biến từ Adafruit IO, điều khiển thiết bị và cung cấp realtime dashboard cho frontend.
 
-## 1) Tổng quan nhanh
+SmartHome Backend is a Spring Boot backend system for smart home IoT applications, supporting sensor data collection from Adafruit IO, device control, and realtime dashboard delivery for the frontend.
 
-- Base URL local: `http://localhost:8080`
-- API prefix: `/api/v1`
-- Mọi response theo wrapper:
+## Tổng quan dự án / Project Overview
 
-```json
-{
-  "statusCode": 200,
-  "message": "...",
-  "data": {}
-}
+Dự án này tập trung vào ba nhiệm vụ chính:
+
+- Thu thập và xử lý dữ liệu cảm biến theo thời gian thực qua MQTT.
+- Quản lý trạng thái thiết bị và điều khiển automation logic.
+- Cung cấp realtime data stream cho frontend bằng SSE để giảm thiểu polling HTTP.
+
+This project focuses on three main goals:
+
+- Collect and process sensor telemetry in real time via MQTT.
+- Manage device state and automation logic for smart home control.
+- Deliver realtime data streams to the frontend using SSE to reduce HTTP polling overhead.
+
+## Điểm nổi bật / Key Highlights
+
+- Spring Boot + Java 21 cho backend API hiện đại.
+- MQTT integration với Adafruit IO để nhận telemetry và gửi lệnh điều khiển.
+- SSE realtime dashboard cho trải nghiệm cập nhật dữ liệu tức thời.
+- PostgreSQL để lưu sensor readings, latest sensor state và device command history.
+- JWT authentication với refresh token rotation cho bảo mật API.
+
+- Spring Boot + Java 21 for a modern backend API.
+- MQTT integration with Adafruit IO for telemetry ingestion and device command publishing.
+- SSE realtime dashboard for instant data updates.
+- PostgreSQL for sensor readings, latest device states, and command history.
+- JWT authentication with refresh token rotation for API security.
+
+## Công nghệ sử dụng / Tech Stack
+
+- Java 21
+- Spring Boot 4.0.3
+- Spring Web / Spring Security / Spring Data JPA
+- Spring Integration MQTT
+- PostgreSQL
+- SSE (Server-Sent Events)
+- Maven
+
+## Kiến trúc hệ thống / System Architecture
+
+1. MQTT inbound
+   - Kết nối tới Adafruit IO để nhận dữ liệu cảm biến từ các feed như TEMP, HUMI, LIGHT, PIR.
+2. Sensor ingestion service
+   - Validate dữ liệu, lưu vào bảng sensor_readings và sensor_latest.
+3. Automation & device control
+   - Dựa trên ngưỡng cảm biến để kích hoạt logic điều khiển LED/FAN.
+4. SSE dashboard
+   - Gửi snapshot và heartbeat tới frontend theo thời gian thực.
+
+1. MQTT inbound
+   - Connects to Adafruit IO to receive sensor data from feeds such as TEMP, HUMI, LIGHT, and PIR.
+2. Sensor ingestion service
+   - Validates incoming data and stores it in sensor_readings and sensor_latest tables.
+3. Automation & device control
+   - Uses sensor thresholds to trigger LED/FAN automation logic.
+4. SSE dashboard
+   - Pushes snapshots and heartbeat events to the frontend in real time.
+
+## Chức năng chính / Core Features
+
+### 1. Authentication / Xác thực
+
+- POST `/api/v1/auth/login`
+- POST `/api/v1/auth/refresh`
+- GET `/api/v1/auth/me`
+
+### 2. Dashboard / Bảng điều khiển
+
+- GET `/api/v1/dashboard` → lấy snapshot trạng thái hiện tại
+- GET `/api/v1/dashboard/stream` → realtime SSE stream
+
+### 3. Device control / Điều khiển thiết bị
+
+- GET `/api/v1/devices/{deviceType}`
+- PUT `/api/v1/devices/{deviceType}/mode`
+- POST `/api/v1/devices/{deviceType}/command`
+
+### 4. Automation / Tự động hóa
+
+- GET `/api/v1/automation/config`
+- PUT `/api/v1/automation/fan-threshold`
+
+### 5. Testing / Demo
+
+- POST `/api/v1/test/sensors/ingest`
+
+## Cài đặt nhanh / Quick Start
+
+### Yêu cầu / Requirements
+
+- Java 21
+- Maven
+- PostgreSQL
+- Tài khoản Adafruit IO và các biến môi trường liên quan
+
+### Biến môi trường cần thiết / Required Environment Variables
+
+```env
+DB_URL=...
+DB_USERNAME=...
+DB_PASSWORD=...
+JWT_SECRET=...
+ADAFRUIT_IO_USERNAME=...
+ADAFRUIT_IO_KEY=...
+CORS_ALLOWED_ORIGIN=http://localhost:3000
 ```
 
-- Auth hiện tại:
-    - Public: `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`
-    - Protected (cần access token): các route `/api/v1/**` còn lại, bao gồm `GET /api/v1/auth/me`, dashboard, devices, automation, test sensors.
-
-## 2) Authentication flow cho FE
-
-## 2.1 Login
-
-- **POST** `/api/v1/auth/login`
-- Body:
-
-```json
-{
-  "username": "admin",
-  "password": "admin123"
-}
-```
-
-- Response `data` (`LoginResponse`):
-    - `accessToken`: JWT dùng cho các API protected
-    - `refreshToken`: JWT dùng để xin token mới
-    - `tokenType`: luôn là `Bearer`
-    - `expiresAt`: thời điểm hết hạn access token
-    - `refreshExpiresAt`: thời điểm hết hạn refresh token
-    - `username`
-
-## 2.2 Refresh token
-
-- **POST** `/api/v1/auth/refresh`
-- Body:
-
-```json
-{
-  "refreshToken": "<refresh-token-cu>"
-}
-```
-
-- Response trả về cặp token mới (access + refresh).
-- BE đang dùng cơ chế rotate refresh token (token cũ sẽ bị revoke sau khi refresh thành công).
-
-## 2.3 Me (profile đang đăng nhập)
-
-- **GET** `/api/v1/auth/me`
-- Header bắt buộc:
-
-```http
-Authorization: Bearer <access-token>
-```
-
-- Response `data` (`MeResponse`):
-    - `id`
-    - `username`
-    - `enabled`
-
-## 2.4 Gợi ý FE token handling
-
-- Lưu `accessToken` trong memory/state (ưu tiên) hoặc storage tùy policy của FE.
-- Khi API 401:
-    1. gọi `/auth/refresh` bằng `refreshToken`
-    2. nếu refresh thành công -> retry request trước đó
-    3. nếu refresh fail -> logout và về màn hình login
-
-## 3) Dashboard APIs
-
-## 3.1 Snapshot dashboard
-
-- **GET** `/api/v1/dashboard`
-- Header: `Authorization: Bearer <access-token>`
-- `data` (`DashboardResponse`):
-    - `temp`, `humi`, `light`, `pir` (`SensorLatestResponse`)
-    - `led`, `fan` (`DeviceStatusResponse`)
-    - `automationConfig` (`AutomationConfigResponse`)
-
-## 3.2 Realtime dashboard (SSE)
-
-- **GET** `/api/v1/dashboard/stream`
-- Content type: `text/event-stream`
-- Event BE gửi:
-    - `dashboard.snapshot`: payload là `DashboardResponse`
-    - `heartbeat`: payload chuỗi `"ok"`
-
-Lưu ý quan trọng cho FE:
-
-- Endpoint này đang là protected route (`/api/v1/**`).
-- `EventSource` native của browser không set được custom `Authorization` header.
-- FE cần 1 trong các phương án:
-    - dùng thư viện/event-source polyfill có hỗ trợ header
-    - hoặc đổi sang polling nếu chưa set được auth cho SSE
-    - hoặc backend thay đổi policy endpoint stream (nếu team thống nhất)
-
-## 4) Device APIs
-
-Tất cả endpoint dưới cần header:
-
-```http
-Authorization: Bearer <access-token>
-```
-
-## 4.1 Lấy trạng thái thiết bị
-
-- **GET** `/api/v1/devices/{deviceType}`
-- `deviceType`: `LED` | `FAN`
-
-## 4.2 Đổi mode thiết bị
-
-- **PUT** `/api/v1/devices/{deviceType}/mode`
-- Body:
-
-```json
-{
-  "mode": "AUTO"
-}
-```
-
-- `mode`: `MANUAL` | `AUTO`
-
-## 4.3 Gửi lệnh tay
-
-- **POST** `/api/v1/devices/{deviceType}/command`
-- Body:
-
-```json
-{
-  "state": "ON",
-  "reason": "turn on from dashboard"
-}
-```
-
-- `state`: `ON` | `OFF`
-- `reason`: optional
-
-## 5) Automation APIs
-
-Tất cả endpoint dưới cần `Authorization`.
-
-## 5.1 Lấy config automation
-
-- **GET** `/api/v1/automation/config`
-
-## 5.2 Cập nhật ngưỡng fan
-
-- **PUT** `/api/v1/automation/fan-threshold`
-- Body:
-
-```json
-{
-  "lowTemp": 26,
-  "highTemp": 30
-}
-```
-
-Validation:
-
-- `lowTemp`, `highTemp` trong khoảng `[0,100]`
-- `highTemp >= lowTemp`
-
-## 6) Sensor test API (hỗ trợ FE/dev)
-
-- **POST** `/api/v1/test/sensors/ingest`
-- Header: `Authorization: Bearer <access-token>`
-- Body:
-
-```json
-{
-  "sensorType": "LIGHT",
-  "value": 20
-}
-```
-
-- `sensorType`: `TEMP` | `HUMI` | `LIGHT` | `PIR`
-
-Endpoint này hữu ích để demo UI realtime mà không cần thiết bị MQTT thật.
-
-## 7) DTO shape chính FE cần render
-
-## 7.1 SensorLatestResponse
-
-```json
-{
-  "sensorType": "TEMP",
-  "value": 31.5,
-  "receivedAt": "2026-03-29T12:00:00Z"
-}
-```
-
-## 7.2 DeviceStatusResponse
-
-```json
-{
-  "deviceType": "LED",
-  "mode": "AUTO",
-  "state": "ON",
-  "lastCommandPayload": "0",
-  "lastCommandSource": "AUTOMATION",
-  "lastCommandReason": "LIGHT <= 50",
-  "lastCommandAt": "2026-03-29T12:00:00Z",
-  "updatedAt": "2026-03-29T12:00:00Z"
-}
-```
-
-## 7.3 AutomationConfigResponse
-
-```json
-{
-  "fanLowTemp": 26,
-  "fanHighTemp": 30,
-  "ledOnThreshold": 50,
-  "ledOffThreshold": 70,
-  "pirAlertCooldownSeconds": 30
-}
-```
-
-## 8) Error handling contract
-
-Validation/business error thường trả:
-
-```json
-{
-  "statusCode": 400,
-  "message": "...",
-  "data": null
-}
-```
-
-Auth fail trả:
-
-```json
-{
-  "statusCode": 401,
-  "message": "Unauthorized",
-  "data": null
-}
-```
-
-## 9) Enums FE cần dùng đúng chữ hoa
-
-- `DeviceType`: `LED`, `FAN`
-- `DeviceMode`: `MANUAL`, `AUTO`
-- `DeviceState`: `ON`, `OFF`
-- `SensorType`: `TEMP`, `HUMI`, `LIGHT`, `PIR`
-- `CommandSource`: `MANUAL_USER`, `AUTOMATION`
-
-## 10) Checklist implement FE
-
-1. Làm màn hình login + store token.
-2. Setup HTTP interceptor để tự động gán `Authorization`.
-3. Setup auto refresh token khi gặp 401.
-4. Mở dashboard bằng `GET /dashboard` (first snapshot).
-5. Nối realtime stream `/dashboard/stream` (nếu đảm bảo gửi được auth header).
-6. Render form điều khiển LED/FAN + update ngay sau command/mode change.
-7. Render và update automation threshold.
-8. Dùng `test/sensors/ingest` để test realtime flow khi dev.
-
-## 11) Curl quick test
+### Chạy project / Run the project
 
 ```bash
-# Login
-curl -X POST "http://localhost:8080/api/v1/auth/login" \
-  -H "Content-Type: application/json" \
-  -d "{\"username\":\"admin\",\"password\":\"admin123\"}"
-
-# Me
-curl -X GET "http://localhost:8080/api/v1/auth/me" \
-  -H "Authorization: Bearer <access-token>"
-
-# Dashboard
-curl -X GET "http://localhost:8080/api/v1/dashboard" \
-  -H "Authorization: Bearer <access-token>"
-
-# Refresh
-curl -X POST "http://localhost:8080/api/v1/auth/refresh" \
-  -H "Content-Type: application/json" \
-  -d "{\"refreshToken\":\"<refresh-token>\"}"
+./mvnw spring-boot:run
 ```
 
-## 12) Deploy on Google Compute Engine
+Ứng dụng sẽ chạy tại:
 
-Da bo sung bo file deploy cho Compute Engine:
+```text
+http://localhost:8080
+```
 
-- `Dockerfile`
-- `.dockerignore`
-- `deploy/compute-engine/docker-compose.yml`
-- `deploy/compute-engine/.env.example`
-- `deploy/compute-engine/install-docker.sh`
-- `deploy/compute-engine/deploy.sh`
-- `deploy/compute-engine/logs.sh`
+The application will run at:
+
+```text
+http://localhost:8080
+```
+
+## Quick test / Kiểm tra nhanh
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
+## Deploy / Triển khai
+
+Project đã được chuẩn bị cho deployment trên Google Compute Engine bằng Docker.
+
+The project is ready for deployment on Google Compute Engine using Docker.
+
+Hướng dẫn chi tiết:
+
 - `docs/deploy-compute-engine.md`
+- `deploy/compute-engine/`
 
-Huong dan day du xem tai: `docs/deploy-compute-engine.md`.
+## Lưu ý cho frontend / Frontend Notes
+
+- SSE là realtime channel chính cho dashboard.
+- Nếu frontend dùng native `EventSource`, cần có phương án inject JWT header (ví dụ polyfill hoặc fallback polling).
+
+- SSE is the main realtime channel for the dashboard.
+- If the frontend uses native `EventSource`, it should support JWT header injection (for example via polyfill or fallback polling).
+
+## Kết luận / Conclusion
+
+Đây là một backend IoT hoàn chỉnh, phù hợp cho mô hình smart home dashboard, có thể kết nối trực tiếp với frontend để hiển thị dữ liệu cảm biến, điều khiển thiết bị và theo dõi trạng thái realtime.
+
+This is a complete IoT backend solution suitable for smart home dashboards, capable of connecting directly to frontend applications to display sensor data, control devices, and monitor realtime status.
 
